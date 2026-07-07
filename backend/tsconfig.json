@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "es2023",
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*", "prisma.config.ts"]
+}

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Env — секрети ніколи не комітяться
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+pnpm-debug.log*
+npm-debug.log*
+
+# Testing / coverage
+coverage/
+
+# OS / IDE
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Prisma
+prisma/*.db
+prisma/dev.db*
