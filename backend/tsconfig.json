@@ -5,7 +5,11 @@
     "target": "es2023",
     "esModuleInterop": true,
     "moduleResolution": "bundler",
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["src/*"]
+    }
   },
   "include": ["src/**/*", "prisma.config.ts"]
 }
