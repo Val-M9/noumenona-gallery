@@ -1,7 +1,22 @@
 import Fastify from 'fastify';
+import sensible from '@fastify/sensible';
+import { API_PREFIXES } from '@noumenona-gallery/shared';
+import jwtPlugin from '~/plugins/jwt.js';
+import corsPlugin from '~/plugins/cors.js';
+import { authRoutes } from '~/routes/index.js';
+// import adminRoutes from '~/routes/admin/index.js';
+// import publicRoutes from '~/routes/public/index.js';
 import { prisma } from '~/lib/prisma.js';
 
 const app = Fastify({ logger: true });
+
+await app.register(sensible);
+await app.register(jwtPlugin);
+await app.register(corsPlugin);
+
+await app.register(authRoutes, { prefix: API_PREFIXES.AUTH });
+// await app.register(publicRoutes, { prefix: "/api"});
+// await app.register(adminRoutes, { prefix: '/api/admin' });
 
 app.get('/health', async (request, reply) => {
   try {
