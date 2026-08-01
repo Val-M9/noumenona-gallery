@@ -18,9 +18,31 @@ export default tseslint.config(
   ...tseslint.configs.recommendedTypeChecked,
 
   {
+    files: ['*.js'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+
+  {
     files: ['backend/**/*.{ts,js}'],
     languageOptions: {
       globals: globals.node,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+
+  {
+    files: ['shared/**/*.{ts,js}'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,

@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @noumenona-gallery/shared build",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
