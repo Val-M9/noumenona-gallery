@@ -8,6 +8,8 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gallery_test
     services:
       postgres:
         image: postgres:16
@@ -36,9 +38,5 @@ jobs:
 
       - name: Prisma migrate
         run: pnpm --filter noumenona-gallery-backend prisma:deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gallery_test
 
       - run: pnpm --filter noumenona-gallery-backend test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gallery_test
