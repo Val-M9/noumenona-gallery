@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gallery_test
+      JWT_SECRET: test-secret
     services:
       postgres:
         image: postgres:16
