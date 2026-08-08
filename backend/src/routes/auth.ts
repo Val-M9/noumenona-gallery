@@ -9,35 +9,46 @@ import {
 } from '~/lib/refreshToken.js';
 
 export default function authRoutes(fastify: FastifyInstance) {
-  fastify.post(AUTH_ROUTES.LOGIN, async (request, reply) => {
-    const parsed = loginSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ message: 'Invalid credentials format' });
-    }
-
-    const admin = await prisma.admin.findUnique({ where: { email: parsed.data.email } });
-    if (!admin) {
-      return reply.code(401).send({ message: 'Invalid email or password' });
-    }
-
-    const isValid = await verifyPassword(admin.passwordHash, parsed.data.password);
-    if (!isValid) {
-      return reply.code(401).send({ message: 'Invalid email or password' });
-    }
-
-    const accessToken = await reply.jwtSign({ adminId: admin.id, email: admin.email });
-
-    const refreshToken = generateRefreshToken();
-    await prisma.refreshToken.create({
-      data: {
-        tokenHash: hashRefreshToken(refreshToken),
-        adminId: admin.id,
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+  fastify.post(
+    AUTH_ROUTES.LOGIN,
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '15 minutes',
+        },
       },
-    });
+    },
+    async (request, reply) => {
+      const parsed = loginSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ message: 'Invalid credentials format' });
+      }
 
-    return { accessToken, refreshToken };
-  });
+      const admin = await prisma.admin.findUnique({ where: { email: parsed.data.email } });
+      if (!admin) {
+        return reply.code(401).send({ message: 'Invalid email or password' });
+      }
+
+      const isValid = await verifyPassword(admin.passwordHash, parsed.data.password);
+      if (!isValid) {
+        return reply.code(401).send({ message: 'Invalid email or password' });
+      }
+
+      const accessToken = await reply.jwtSign({ adminId: admin.id, email: admin.email });
+
+      const refreshToken = generateRefreshToken();
+      await prisma.refreshToken.create({
+        data: {
+          tokenHash: hashRefreshToken(refreshToken),
+          adminId: admin.id,
+          expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+        },
+      });
+
+      return { accessToken, refreshToken };
+    },
+  );
 
   fastify.post(AUTH_ROUTES.REFRESH, async (request, reply) => {
     const parsed = refreshTokenSchema.safeParse(request.body);

@@ -5,6 +5,7 @@ import { API_PREFIXES, SYSTEM_ROUTES } from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
 import jwtPlugin from '~/plugins/jwt.js';
 import corsPlugin from '~/plugins/cors.js';
+import rateLimitPlugin from '~/plugins/rateLimit.js';
 import { authRoutes, adminRoutes } from '~/routes/index.js';
 // import publicRoutes from '~/routes/public/index.js';
 
@@ -13,6 +14,7 @@ export async function buildApp() {
 
   await app.register(sensible);
   await app.register(helmet);
+  await app.register(rateLimitPlugin);
   await app.register(jwtPlugin);
   await app.register(corsPlugin);
 
