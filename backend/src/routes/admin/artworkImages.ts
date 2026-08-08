@@ -2,9 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { createArtworkImageSchema, ADMIN_ARTWORK_IMAGE_ROUTES } from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
 import { cloudinary } from '~/lib/cloudinary.js';
-
-type ArtworkImageParams = { Params: { artworkId: string } };
-type ArtworkImageDetailParams = { Params: { artworkId: string; imageId: string } };
+import type { ArtworkImageParams, ArtworkImageDetailParams } from '~/common/types.js';
 
 export default function artworkImagesAdminRoutes(fastify: FastifyInstance) {
   fastify.post<ArtworkImageParams>(ADMIN_ARTWORK_IMAGE_ROUTES.BASE, async (request, reply) => {

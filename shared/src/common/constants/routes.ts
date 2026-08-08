@@ -5,6 +5,8 @@ export const API_PREFIXES = {
 
 export const AUTH_ROUTES = {
   LOGIN: '/login',
+  REFRESH: '/refresh',
+  LOGOUT: '/logout',
 } as const;
 
 export const SYSTEM_ROUTES = {

@@ -14,10 +14,25 @@ model Admin {
   passwordHash String
   name         String?
 
+  refreshTokens RefreshToken[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("admins")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid(2))
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  adminId String
+  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("refresh_tokens")
 }
 
 model Artist {

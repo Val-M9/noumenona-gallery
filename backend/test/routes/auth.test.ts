@@ -9,7 +9,9 @@ import { hashPassword } from '~/lib/hash.js';
 const TEST_ADMIN_EMAIL = 'login-test@example.com';
 const TEST_ADMIN_PASSWORD = 'correct-password';
 
-describe('POST /api/auth/login', () => {
+type TokenPairBody = { accessToken: string; refreshToken: string };
+
+describe('auth routes', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
@@ -27,33 +29,87 @@ describe('POST /api/auth/login', () => {
   });
 
   afterAll(async () => {
+    // onDelete: Cascade on RefreshToken means this also cleans up any tokens issued in these tests.
     await prisma.admin.deleteMany({ where: { email: TEST_ADMIN_EMAIL } });
     await app.close();
     await prisma.$disconnect();
   });
 
-  it('returns a token for valid credentials', async () => {
-    const response = await supertest(app.server)
-      .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
-      .send({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  describe('POST /api/auth/login', () => {
+    it('returns an access token and a refresh token for valid credentials', async () => {
+      const response = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('token');
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('accessToken');
+      expect(response.body).toHaveProperty('refreshToken');
+    });
+
+    it('rejects an incorrect password', async () => {
+      const response = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: TEST_ADMIN_EMAIL, password: 'wrong-password' });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('rejects an unknown email', async () => {
+      const response = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: 'nobody@example.com', password: TEST_ADMIN_PASSWORD });
+
+      expect(response.status).toBe(401);
+    });
   });
 
-  it('rejects an incorrect password', async () => {
-    const response = await supertest(app.server)
-      .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
-      .send({ email: TEST_ADMIN_EMAIL, password: 'wrong-password' });
+  describe('POST /api/auth/refresh', () => {
+    it('issues a new token pair and rotates the refresh token', async () => {
+      const login = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+      const { refreshToken: oldRefreshToken } = login.body as TokenPairBody;
 
-    expect(response.status).toBe(401);
+      const refreshed = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.REFRESH}`)
+        .send({ refreshToken: oldRefreshToken });
+
+      expect(refreshed.status).toBe(200);
+      expect(refreshed.body).toHaveProperty('accessToken');
+      expect((refreshed.body as TokenPairBody).refreshToken).not.toBe(oldRefreshToken);
+
+      const reuseOldToken = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.REFRESH}`)
+        .send({ refreshToken: oldRefreshToken });
+
+      expect(reuseOldToken.status).toBe(401);
+    });
+
+    it('rejects an unknown refresh token', async () => {
+      const response = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.REFRESH}`)
+        .send({ refreshToken: 'not-a-real-token' });
+
+      expect(response.status).toBe(401);
+    });
   });
 
-  it('rejects an unknown email', async () => {
-    const response = await supertest(app.server)
-      .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
-      .send({ email: 'nobody@example.com', password: TEST_ADMIN_PASSWORD });
+  describe('POST /api/auth/logout', () => {
+    it('revokes the refresh token so it can no longer be used', async () => {
+      const login = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+      const { refreshToken } = login.body as TokenPairBody;
 
-    expect(response.status).toBe(401);
+      const logout = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGOUT}`)
+        .send({ refreshToken });
+      expect(logout.status).toBe(204);
+
+      const refreshAfterLogout = await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.REFRESH}`)
+        .send({ refreshToken });
+      expect(refreshAfterLogout.status).toBe(401);
+    });
   });
 });
