@@ -93,6 +93,7 @@ model Artwork {
 model ArtworkImage {
   id        String  @id @default(cuid(2))
   url       String
+  publicId  String
   alt       String?
   width     Int?
   height    Int?
