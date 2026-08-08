@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import sensible from '@fastify/sensible';
+import helmet from '@fastify/helmet';
 import { API_PREFIXES, SYSTEM_ROUTES } from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
 import jwtPlugin from '~/plugins/jwt.js';
@@ -11,6 +12,7 @@ export async function buildApp() {
   const app = Fastify({ logger: true });
 
   await app.register(sensible);
+  await app.register(helmet);
   await app.register(jwtPlugin);
   await app.register(corsPlugin);
 
