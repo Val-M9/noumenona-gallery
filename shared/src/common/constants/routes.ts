@@ -26,3 +26,9 @@ export const ADMIN_ARTWORK_IMAGE_ROUTES = {
   BASE: '/artworks/:artworkId/images',
   DETAIL: '/artworks/:artworkId/images/:imageId',
 } as const;
+
+export const ADMIN_SERIES_ROUTES = {
+  BASE: '/series',
+  DETAIL: '/series/:id',
+  ARTWORKS: '/series/:id/artworks',
+} as const;
