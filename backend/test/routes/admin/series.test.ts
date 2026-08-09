@@ -10,6 +10,7 @@ import { ensureTestArtist } from '../../helpers/artist.js';
 const TEST_ADMIN_EMAIL = 'series-admin-test@example.com';
 const TEST_ADMIN_PASSWORD = 'correct-password';
 const SLUG_PREFIX = 'test-series-';
+const TITLE_PREFIX = 'Test Series';
 
 const BASE = `${API_PREFIXES.ADMIN}${ADMIN_SERIES_ROUTES.BASE}`;
 const detailUrl = (id: string) =>
@@ -75,9 +76,27 @@ describe('admin series routes', () => {
     const response = await supertest(app.server)
       .post(BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Missing slug' });
+      .send({ slug: `${SLUG_PREFIX}missing-title` });
 
     expect(response.status).toBe(400);
+  });
+
+  it('auto-generates a de-duplicated slug from the title when slug is omitted', async () => {
+    const title = `${TITLE_PREFIX} Café Duplicate`;
+
+    const first = await supertest(app.server)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title });
+    const second = await supertest(app.server)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title });
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect((first.body as SeriesBody).slug).toBe(`${SLUG_PREFIX}cafe-duplicate`);
+    expect((second.body as SeriesBody).slug).toBe(`${SLUG_PREFIX}cafe-duplicate-2`);
   });
 
   it('creates a series and attaches the given artworks in one request', async () => {
@@ -144,6 +163,38 @@ describe('admin series routes', () => {
 
     expect(response.status).toBe(200);
     expect((response.body as SeriesBody).title).toBe('Updated Title');
+  });
+
+  it('auto-updates the slug to follow a title-only change', async () => {
+    const created = await supertest(app.server)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ slug: `${SLUG_PREFIX}original-name`, title: 'Original' });
+    const { id } = created.body as SeriesBody;
+
+    const response = await supertest(app.server)
+      .patch(detailUrl(id))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: `${TITLE_PREFIX} Renamed` });
+
+    expect(response.status).toBe(200);
+    expect((response.body as SeriesBody).slug).toBe(`${SLUG_PREFIX}renamed`);
+  });
+
+  it('leaves the slug untouched when neither slug nor title is in the update', async () => {
+    const created = await supertest(app.server)
+      .post(BASE)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ slug: `${SLUG_PREFIX}untouched`, title: 'Untouched' });
+    const { id, slug } = created.body as SeriesBody;
+
+    const response = await supertest(app.server)
+      .patch(detailUrl(id))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isPublished: false });
+
+    expect(response.status).toBe(200);
+    expect((response.body as SeriesBody).slug).toBe(slug);
   });
 
   it('returns 404 when updating an unknown series', async () => {
