@@ -32,3 +32,7 @@ export const ADMIN_SERIES_ROUTES = {
   DETAIL: '/series/:id',
   ARTWORKS: '/series/:id/artworks',
 } as const;
+
+export const ADMIN_ARTIST_ROUTES = {
+  BASE: '/artist',
+} as const;
