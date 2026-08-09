@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createSeriesSchema = z.object({
-  slug: z.string().min(1),
+  slug: z.string().min(1).optional(),
   title: z.string().min(1),
   description: z.string().optional(),
   isPublished: z.boolean().optional(),

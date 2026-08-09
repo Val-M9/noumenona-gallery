@@ -5,6 +5,7 @@ import {
   ADMIN_ARTWORK_ROUTES,
 } from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
+import { uniqueArtworkSlug } from '~/lib/slug.js';
 import type { IdParams } from '~/common/types.js';
 
 async function artworkExistsOrNotFound(id: string, reply: FastifyReply): Promise<boolean> {
@@ -40,8 +41,10 @@ export default function artworksAdminRoutes(fastify: FastifyInstance) {
     }
 
     const artist = await prisma.artist.findFirstOrThrow();
+    const slug = await uniqueArtworkSlug(artist.id, parsed.data.slug ?? parsed.data.title);
+
     const artwork = await prisma.artwork.create({
-      data: { ...parsed.data, artistId: artist.id },
+      data: { ...parsed.data, slug, artistId: artist.id },
     });
     return reply.status(201).send(artwork);
   });
@@ -52,12 +55,17 @@ export default function artworksAdminRoutes(fastify: FastifyInstance) {
       return reply.badRequest(parsed.error.message);
     }
 
-    if (!(await artworkExistsOrNotFound(request.params.id, reply))) return;
+    const existing = await prisma.artwork.findUnique({ where: { id: request.params.id } });
+    if (!existing) return reply.notFound();
 
-    return prisma.artwork.update({
-      where: { id: request.params.id },
-      data: parsed.data,
-    });
+    const data = { ...parsed.data };
+    if (data.slug !== undefined) {
+      data.slug = await uniqueArtworkSlug(existing.artistId, data.slug, existing.id);
+    } else if (data.title !== undefined) {
+      data.slug = await uniqueArtworkSlug(existing.artistId, data.title, existing.id);
+    }
+
+    return prisma.artwork.update({ where: { id: existing.id }, data });
   });
 
   fastify.delete<IdParams>(ADMIN_ARTWORK_ROUTES.DETAIL, async (request, reply) => {

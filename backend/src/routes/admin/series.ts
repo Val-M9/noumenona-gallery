@@ -6,6 +6,7 @@ import {
   ADMIN_SERIES_ROUTES,
 } from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
+import { uniqueSeriesSlug } from '~/lib/slug.js';
 import type { IdParams } from '~/common/types.js';
 
 async function seriesExistsOrNotFound(id: string, reply: FastifyReply): Promise<boolean> {
@@ -42,10 +43,11 @@ export default function seriesAdminRoutes(fastify: FastifyInstance) {
 
     const { artworkIds, ...data } = parsed.data;
     const artist = await prisma.artist.findFirstOrThrow();
+    const slug = await uniqueSeriesSlug(artist.id, data.slug ?? data.title);
 
     const series = await prisma.$transaction(async (tx) => {
       const created = await tx.series.create({
-        data: { ...data, artistId: artist.id },
+        data: { ...data, slug, artistId: artist.id },
       });
 
       if (artworkIds && artworkIds.length > 0) {
@@ -70,12 +72,17 @@ export default function seriesAdminRoutes(fastify: FastifyInstance) {
       return reply.badRequest(parsed.error.message);
     }
 
-    if (!(await seriesExistsOrNotFound(request.params.id, reply))) return;
+    const existing = await prisma.series.findUnique({ where: { id: request.params.id } });
+    if (!existing) return reply.notFound();
 
-    return prisma.series.update({
-      where: { id: request.params.id },
-      data: parsed.data,
-    });
+    const data = { ...parsed.data };
+    if (data.slug !== undefined) {
+      data.slug = await uniqueSeriesSlug(existing.artistId, data.slug, existing.id);
+    } else if (data.title !== undefined) {
+      data.slug = await uniqueSeriesSlug(existing.artistId, data.title, existing.id);
+    }
+
+    return prisma.series.update({ where: { id: existing.id }, data });
   });
 
   fastify.patch<IdParams>(ADMIN_SERIES_ROUTES.ARTWORKS, async (request, reply) => {
