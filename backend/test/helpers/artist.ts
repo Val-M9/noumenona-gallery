@@ -5,5 +5,11 @@ export async function ensureTestArtist(): Promise<ArtistModel> {
   const existing = await prisma.artist.findFirst();
   if (existing) return existing;
 
-  return prisma.artist.create({ data: { slug: 'test-artist', name: 'Test Artist' } });
+  // Upserted (not created) because multiple test files' beforeAll hooks can race here
+  // in parallel on a fresh DB with no Artist row yet — this makes the fallback atomic.
+  return prisma.artist.upsert({
+    where: { slug: 'test-artist' },
+    update: {},
+    create: { slug: 'test-artist', name: 'Test Artist' },
+  });
 }
