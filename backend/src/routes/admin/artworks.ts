@@ -21,7 +21,7 @@ export default function artworksAdminRoutes(fastify: FastifyInstance) {
   fastify.get(ADMIN_ARTWORK_ROUTES.BASE, async () => {
     return prisma.artwork.findMany({
       include: { images: { orderBy: { sortOrder: 'asc' } } },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
   });
 

@@ -22,7 +22,7 @@ export default function seriesAdminRoutes(fastify: FastifyInstance) {
   fastify.get(ADMIN_SERIES_ROUTES.BASE, async () => {
     return prisma.series.findMany({
       include: { artworks: { orderBy: { sortOrder: 'asc' } } },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
   });
 
