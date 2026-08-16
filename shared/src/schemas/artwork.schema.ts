@@ -16,8 +16,8 @@ export const createArtworkSchema = z.object({
   seriesId: z.string().optional(),
 });
 
-export type CreateArtworkInput = z.infer<typeof createArtworkSchema>;
-
 export const updateArtworkSchema = createArtworkSchema.partial();
+
+export type CreateArtworkInput = z.infer<typeof createArtworkSchema>;
 
 export type UpdateArtworkInput = z.infer<typeof updateArtworkSchema>;

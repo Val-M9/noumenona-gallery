@@ -6,8 +6,7 @@ import { prisma } from '~/lib/prisma.js';
 import jwtPlugin from '~/plugins/jwt.js';
 import corsPlugin from '~/plugins/cors.js';
 import rateLimitPlugin from '~/plugins/rateLimit.js';
-import { authRoutes, adminRoutes } from '~/routes/index.js';
-// import publicRoutes from '~/routes/public/index.js';
+import { authRoutes, adminRoutes, publicRoutes } from '~/routes/index.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -20,7 +19,7 @@ export async function buildApp() {
 
   await app.register(authRoutes, { prefix: API_PREFIXES.AUTH });
   await app.register(adminRoutes, { prefix: API_PREFIXES.ADMIN });
-  // await app.register(publicRoutes, { prefix: "/api"});
+  await app.register(publicRoutes, { prefix: API_PREFIXES.PUBLIC });
 
   app.get(SYSTEM_ROUTES.HEALTH, async (request, reply) => {
     try {

@@ -1,6 +1,7 @@
 export const API_PREFIXES = {
   AUTH: '/api/auth',
   ADMIN: '/api/admin',
+  PUBLIC: '/api',
 } as const;
 
 export const AUTH_ROUTES = {
@@ -35,4 +36,9 @@ export const ADMIN_SERIES_ROUTES = {
 
 export const ADMIN_ARTIST_ROUTES = {
   BASE: '/artist',
+} as const;
+
+export const PUBLIC_ARTWORK_ROUTES = {
+  BASE: '/artworks',
+  DETAIL: '/artworks/:slug',
 } as const;
