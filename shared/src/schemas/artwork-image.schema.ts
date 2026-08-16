@@ -10,3 +10,10 @@ export const createArtworkImageSchema = z.object({
 });
 
 export type CreateArtworkImageInput = z.infer<typeof createArtworkImageSchema>;
+
+export const updateArtworkImageSchema = z.object({
+  alt: z.string().optional(),
+  sortOrder: z.number().int().optional(),
+});
+
+export type UpdateArtworkImageInput = z.infer<typeof updateArtworkImageSchema>;

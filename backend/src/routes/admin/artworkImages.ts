@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { createArtworkImageSchema, ADMIN_ARTWORK_IMAGE_ROUTES } from '@noumenona-gallery/shared';
+import {
+  createArtworkImageSchema,
+  updateArtworkImageSchema,
+  ADMIN_ARTWORK_IMAGE_ROUTES,
+} from '@noumenona-gallery/shared';
 import { prisma } from '~/lib/prisma.js';
 import { cloudinary } from '~/lib/cloudinary.js';
 import type { ArtworkImageParams, ArtworkImageDetailParams } from '~/common/types.js';
@@ -21,6 +25,23 @@ export default function artworkImagesAdminRoutes(fastify: FastifyInstance) {
     });
     return reply.status(201).send(image);
   });
+
+  fastify.patch<ArtworkImageDetailParams>(
+    ADMIN_ARTWORK_IMAGE_ROUTES.DETAIL,
+    async (request, reply) => {
+      const parsed = updateArtworkImageSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.badRequest(parsed.error.message);
+      }
+
+      const image = await prisma.artworkImage.findFirst({
+        where: { id: request.params.imageId, artworkId: request.params.artworkId },
+      });
+      if (!image) return reply.notFound();
+
+      return prisma.artworkImage.update({ where: { id: image.id }, data: parsed.data });
+    },
+  );
 
   fastify.delete<ArtworkImageDetailParams>(
     ADMIN_ARTWORK_IMAGE_ROUTES.DETAIL,
