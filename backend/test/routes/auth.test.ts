@@ -61,6 +61,36 @@ describe('auth routes', () => {
 
       expect(response.status).toBe(401);
     });
+
+    it("cleans up the admin's already-expired refresh tokens on login", async () => {
+      const admin = await prisma.admin.findUniqueOrThrow({ where: { email: TEST_ADMIN_EMAIL } });
+
+      const expired = await prisma.refreshToken.create({
+        data: {
+          tokenHash: 'expired-test-token-hash',
+          adminId: admin.id,
+          expiresAt: new Date(Date.now() - 1000),
+        },
+      });
+      const stillValid = await prisma.refreshToken.create({
+        data: {
+          tokenHash: 'still-valid-test-token-hash',
+          adminId: admin.id,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        },
+      });
+
+      await supertest(app.server)
+        .post(`${API_PREFIXES.AUTH}${AUTH_ROUTES.LOGIN}`)
+        .send({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+
+      const remainingIds = (
+        await prisma.refreshToken.findMany({ where: { adminId: admin.id } })
+      ).map((t) => t.id);
+
+      expect(remainingIds).not.toContain(expired.id);
+      expect(remainingIds).toContain(stillValid.id);
+    });
   });
 
   describe('POST /api/auth/refresh', () => {

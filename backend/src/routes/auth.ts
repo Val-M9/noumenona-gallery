@@ -38,13 +38,18 @@ export default function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign({ adminId: admin.id, email: admin.email });
 
       const refreshToken = generateRefreshToken();
-      await prisma.refreshToken.create({
-        data: {
-          tokenHash: hashRefreshToken(refreshToken),
-          adminId: admin.id,
-          expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-        },
-      });
+      await prisma.$transaction([
+        prisma.refreshToken.deleteMany({
+          where: { adminId: admin.id, expiresAt: { lt: new Date() } },
+        }),
+        prisma.refreshToken.create({
+          data: {
+            tokenHash: hashRefreshToken(refreshToken),
+            adminId: admin.id,
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+          },
+        }),
+      ]);
 
       return { accessToken, refreshToken };
     },
