@@ -91,6 +91,63 @@ describe('admin artwork image routes', () => {
     expect(body.artworkId).toBe(artworkId);
   });
 
+  it('updates image metadata (alt/sortOrder)', async () => {
+    const created = await supertest(app.server)
+      .post(baseUrl(artworkId))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ url: 'https://example.com/patch-me.jpg', publicId: 'artworks/patch-me' });
+    const { id } = created.body as ImageBody;
+
+    const response = await supertest(app.server)
+      .patch(detailUrl(artworkId, id))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ alt: 'Updated alt text', sortOrder: 3 });
+
+    expect(response.status).toBe(200);
+    const body = response.body as ImageBody & { alt: string | null; sortOrder: number };
+    expect(body.alt).toBe('Updated alt text');
+    expect(body.sortOrder).toBe(3);
+  });
+
+  it('rejects an invalid update payload', async () => {
+    const created = await supertest(app.server)
+      .post(baseUrl(artworkId))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ url: 'https://example.com/invalid-patch.jpg', publicId: 'artworks/invalid-patch' });
+    const { id } = created.body as ImageBody;
+
+    const response = await supertest(app.server)
+      .patch(detailUrl(artworkId, id))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ sortOrder: 'not-a-number' });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 404 when updating an image with a mismatched artwork id', async () => {
+    const created = await supertest(app.server)
+      .post(baseUrl(artworkId))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ url: 'https://example.com/mismatch-patch.jpg', publicId: 'artworks/mismatch-patch' });
+    const { id } = created.body as ImageBody;
+
+    const response = await supertest(app.server)
+      .patch(detailUrl('does-not-exist', id))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ alt: 'Should not apply' });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 404 when updating an unknown image', async () => {
+    const response = await supertest(app.server)
+      .patch(detailUrl(artworkId, 'does-not-exist'))
+      .set('Authorization', `Bearer ${token}`)
+      .send({ alt: 'Whatever' });
+
+    expect(response.status).toBe(404);
+  });
+
   it('returns 404 when deleting an image with a mismatched artwork id', async () => {
     const created = await supertest(app.server)
       .post(baseUrl(artworkId))
